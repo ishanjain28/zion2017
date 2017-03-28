@@ -1,0 +1,7 @@
+{
+  "required_data": [
+    "name",
+    "phoneno",
+    "email"
+  ]
+}

@@ -1,0 +1,37 @@
+{
+  "name": "zion2017",
+  "version": "1.0.0",
+  "description": "API For Payment system and everything else for ZION 2017 fest",
+  "main": "index.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ishanjain28/zion2017.git"
+  },
+  "keywords": [
+    "coer",
+    "node",
+    "api",
+    "instamojo"
+  ],
+  "author": "Ishan Jain <github.com/ishanjain28>",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/ishanjain28/zion2017/issues"
+  },
+  "homepage": "https://github.com/ishanjain28/zion2017#readme",
+  "dependencies": {
+    "body-parser": "^1.17.1",
+    "chalk": "^1.1.3",
+    "dotenv": "^4.0.0",
+    "eslint": "^3.18.0",
+    "express": "^4.15.2",
+    "instamojo-nodejs": "^0.0.5",
+    "mongodb": "^2.2.25",
+    "redis": "^2.7.1",
+    "request": "^2.81.0"
+  }
+}
