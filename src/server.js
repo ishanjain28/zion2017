@@ -6,13 +6,13 @@ const express = require('express'),
   bodyParser = require('body-parser'),
   chalk = require('chalk'),
   mongo = require('mongodb'),
-  Insta = require('instamojo-nodejs'),
+  Insta = require('instamojo-nodejs'), {randomBytes} = require('crypto'),
   app = express(),
   MClient = mongo.MongoClient,
   PORT = process.env.PORT || 5000,
   INSTA_API_KEY = process.env.INSTA_API_KEY,
   INSTA_AUTH_KEY = process.env.INSTA_AUTH_KEY,
-  MONGODB_URL = process.env.MONGODB_URI || "mongodb://localhost:27017";
+  MONGODB_URL = process.env.MONGODB_URI || "mongodb://localhost:27017/zion17";
 
 // POST body parsers
 app.use(bodyParser.json());
@@ -46,8 +46,6 @@ app.post('/generate_request_url',
 },
 // Generates Payment URL
 (req, res, next) => {
-  let db = req.app.locals.db,
-    transactionsList = db.collection('transactionList');
 
   const {email, name, phoneno, amount} = req.body;
   let req_data = new Insta.PaymentData();
@@ -68,31 +66,82 @@ app.post('/generate_request_url',
     } else {
       let response = JSON.parse(resp);
       if (response.success) {
-        transactionsList.insertOne({
-          name: name,
-          amount: amount,
-          email: email,
-          phoneno: phoneno
-        }, (err, result) => {
-          if (err) {
-            // Serious trouble.
-            throw err;
-          } else {
-            if (result.insertedCount && result.result.ok) {
-              res.send(JSON.stringify({
-                error: 0,
-                data: {
-                  payment_url: response.payment_request.longurl,
-                  email: email
-                }
-              }))
-            } else {
-              res.send(JSON.stringify({error: 1, message: "Interal Server Error, Please retry after some time."}))
-            }
+        res.send(JSON.stringify({
+          error: 0,
+          data: {
+            payment_url: response.payment_request.longurl,
+            email: email,
+            name: name,
+            phone: phoneno,
+            amount: amount
           }
-        });
+        }))
       } else {
         res.send(JSON.stringify({error: 1, code: 400, message: "Failed to generate url. Please retry after some time."}))
+      }
+    }
+  })
+});
+
+app.get('/payment_status', (req, res) => {
+  if (req.query && req.query.payment_id && req.query.payment_request_id) {
+    res.send(JSON.stringify({payment_id: req.query.payment_id, payment_request_id: req.query.payment_request_id}));
+  } else {
+    res
+      .status(400)
+      .write(JSON.stringify({error: 1, message: 'Invalid Request'}));
+
+    res.end();
+  };
+});
+
+app.post('/payment_webhook', (req, res) => {
+  const db = req.app.locals.db,
+    guestsList = db.collection('guestsList'), {
+      amount,
+      buyer_name,
+      buyer,
+      buyer_phone,
+      fees,
+      payment_id,
+      payment_request_id,
+      shorturl,
+      status
+    } = req.body;
+
+  let _id = "zion" + randomBytes(3).toString('hex');
+  guestsList.insertOne({
+    _id: _id,
+    amount: amount,
+    email: buyer,
+    name: buyer_name,
+    fees: fees,
+    payment_id: payment_id,
+    payment_request_id: payment_request_id,
+    payment_status: status,
+    shorturl: shorturl,
+    phone: buyer_phone
+  }, (err, result) => {
+    if (err) {
+      throw err;
+    } else {
+
+      if (result.result.ok && result.nInserted) {
+        res.send(JSON.stringify({error: 0, message: 'Successfully stored'}))
+      } else {
+        console.log({
+          _id: _id,
+          amount: amount,
+          email: buyer,
+          name: buyer_name,
+          fees: fees,
+          payment_id: payment_id,
+          payment_request_id: payment_request_id,
+          payment_status: status,
+          shorturl: shorturl,
+          phone: buyer_phone
+        });
+        res.send(JSON.stringify({error: 1, message: 'Error occurred in storing data in databases'}))
       }
     }
   })
