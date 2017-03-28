@@ -12,7 +12,7 @@ const express = require('express'),
   PORT = process.env.PORT || 5000,
   INSTA_API_KEY = process.env.INSTA_API_KEY,
   INSTA_AUTH_KEY = process.env.INSTA_AUTH_KEY,
-  MONGODB_URL = process.env.MONGODB_URL || "mongodb://localhost:27017";
+  MONGODB_URL = process.env.MONGODB_URI || "mongodb://localhost:27017";
 
 // POST body parsers
 app.use(bodyParser.json());
