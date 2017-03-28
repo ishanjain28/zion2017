@@ -95,6 +95,33 @@ app.get('/payment_status', (req, res) => {
   };
 });
 
+app.get('/check_payment', (req, res) => {
+  const db = req.app.locals.db,
+    guestsList = db.collection('guestsList');
+  if (req.query && req.query.payment_id && req.query.payment_request_id) {
+    guestsList.findOne({
+      payment_id: req.query.payment_id,
+      payment_request_id: req.query.payment_request_id
+    }, (err, doc) => {
+      if (err) {
+        res.send(JSON.stringify({error: 1, message: "Internal Server Error, Please retry"}));
+        throw err;
+      }
+      console.log(doc)
+      if (doc) {
+        res.send(JSON.stringify({error: 0, code: 'PAID', message: 'Paid'}))
+      } else {
+        res.send(JSON.stringify({error: 1, code: 'NOTPAID', message: 'Not Paid'}))
+      }
+    });
+  } else {
+    res
+      .status(400)
+      .write(JSON.stringify({error: 1, message: 'Bad Request. Please provide valid data'}));
+    res.end();  
+  }
+});
+
 app.post('/payment_webhook', (req, res) => {
   const db = req.app.locals.db,
     guestsList = db.collection('guestsList'), {
