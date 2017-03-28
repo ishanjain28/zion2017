@@ -107,7 +107,6 @@ app.get('/check_payment', (req, res) => {
         res.send(JSON.stringify({error: 1, message: "Internal Server Error, Please retry"}));
         throw err;
       }
-      console.log(doc)
       if (doc) {
         res.send(JSON.stringify({error: 0, code: 'PAID', message: 'Paid'}))
       } else {
@@ -118,7 +117,7 @@ app.get('/check_payment', (req, res) => {
     res
       .status(400)
       .write(JSON.stringify({error: 1, message: 'Bad Request. Please provide valid data'}));
-    res.end();  
+    res.end();
   }
 });
 
