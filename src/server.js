@@ -260,27 +260,36 @@ setInterval(function () {
     indianMinutes = UTCMinutes + 30,
     indianHours = UTCHours + 5;
 
-  // if (indianMinutes == 30 && indianHours == 8) {
-  guestsList
-    .find({})
-    .toArray((err, docs) => {
-      if (err) {
-        throw err;
-      }
-      if (docs) {
-        docs.forEach(doc => {
-          if (doc.zionid && doc.buyer && doc.buyer_name && doc.phone && doc.amount && doc.payment_id) {
-            client.hmset(doc['_id'], {
-              email: doc.buyer,
-              name: doc.buyer_name,
-              phone: doc.buyer_phone,
-              amount: doc.amount,
-              payment_id: doc.payment_id,
-              zionid: doc.zionid
-            })
-          }
-        });
-      }
-    });
-  // }
-}, 600);
+  if (indianMinutes == 30 && indianHours == 8) {
+    guestsList
+      .find({})
+      .toArray((err, docs) => {
+        if (err) {
+          throw err;
+        }
+        if (docs) {
+          docs.forEach(doc => {
+            if (doc.zionid && doc.email && doc.name && doc.phone && doc.amount && doc.payment_id) {
+              let zionid = doc.zionid;
+              client.hmset(zionid, {
+                email: doc.email,
+                name: doc.name,
+                phone: doc.phone,
+                amount: doc.amount,
+                payment_id: doc.payment_id,
+                zionid: zionid
+              }, (err, status) => {
+                if (err) 
+                  throw err;
+                if (status == "OK") {
+                  console.log(`Successfully ${zionid} seeded in redis`)
+                } else {
+                  console.log(`Failed in seeding ${zionid} to redis`)
+                }
+              })
+            }
+          });
+        }
+      });
+  }
+}, 60000);
