@@ -7,6 +7,7 @@ const express = require('express'),
   chalk = require('chalk'),
   mongo = require('mongodb'),
   Insta = require('instamojo-nodejs'), {randomBytes} = require('crypto'),
+  QRCode = require('qrcode'),
   app = express(),
   MClient = mongo.MongoClient,
   PORT = process.env.PORT || 5000,
@@ -135,7 +136,8 @@ app.post('/payment_webhook', (req, res) => {
       status
     } = req.body;
 
-  let _id = "zion" + randomBytes(3).toString('hex');
+  let _id = "ZION" + randomBytes(3).toString('hex');
+
   guestsList.insertOne({
     _id: _id,
     amount: amount,
@@ -184,4 +186,23 @@ Please Change PORT or stop the process using that port and then restart`));
   } else {
     console.log(`${chalk.green(`Server successfully started on PORT ${PORT}`)}\nBring it on!`)
   }
-})
+});
+
+function GenerateQRCode(_id) {
+  // Generate QR QRCode
+  return new Promise((resolve, reject) => {
+    QRCode.toDataURL(_id, {
+      errorCorrectLevel: 'H'
+    }, (err, url) => {
+      if (err) {
+        console.log(err);
+        reject();
+      }
+      resolve(url);
+    });
+  });
+}
+// GenerateQRCode('ZIONer798a').then((qr_base64) => {   console.log(qr_base64);
+// let qr = qr_base64.replace('data:image/png;base64,', '')   console.log(qr);
+// fs.writeFile('qr.png', qr, 'base64', (err) => {     if (err)       throw err;
+//     }   ) });
