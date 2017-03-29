@@ -2,13 +2,14 @@
 require('dotenv').config();
 
 const express = require('express'),
-  path = require('path'),
   bodyParser = require('body-parser'),
   chalk = require('chalk'),
   mongo = require('mongodb'),
-  Insta = require('instamojo-nodejs'), {randomBytes} = require('crypto'),
+  Insta = require('instamojo-nodejs'),
   redis = require('redis'),
   url = require('url'),
+  randomBytes = require('crypto').randomBytes,
+  StoreTransaction = require('./StoreInDB'),
   app = express(),
   MClient = mongo.MongoClient,
   PORT = process.env.PORT || 5000,
@@ -26,6 +27,7 @@ app.disable('x-powered-by');
 
 // Set Instamojo keys
 Insta.setKeys(INSTA_API_KEY, INSTA_AUTH_KEY);
+
 // Enable Sandbox Mode
 Insta.isSandboxMode(true);
 
@@ -45,7 +47,6 @@ if (process.env.NODE_ENV == "production") {
   let rtgURL = url.parse(REDISTOGO_URL);
   let client = redis.createClient(rtgURL.port, rtgURL.hostname);
   client.auth(rtgURL.auth.split(':')[1]);
-
   app.locals.client = client;
 } else {
   let redisClient = redis.createClient();
@@ -84,8 +85,9 @@ app.post('/generate_request_url',
 },
 // Generates Payment URL
 (req, res, next) => {
-
-  const {email, name, phoneno, amount} = req.body;
+  const {email, name, phoneno, amount} = req.body,
+    db = req.app.locals.db,
+    guestsList = db.collection('guestsList');
   let req_data = new Insta.PaymentData();
   req_data.email = email;
   req_data.purpose = "ZION 2017 Registration Fee";
@@ -104,33 +106,40 @@ app.post('/generate_request_url',
     } else {
       let response = JSON.parse(resp);
       if (response.success) {
-        res.send(JSON.stringify({
-          error: 0,
-          data: {
-            payment_url: response.payment_request.longurl,
-            email: email,
-            name: name,
-            phone: phoneno,
-            amount: amount
+        StoreTransaction(guestsList, {
+          email: email,
+          name: name,
+          phone: phoneno,
+          amount: amount,
+          status: response.payment_request.status,
+          payment_request_id: response.payment_request.id,
+          payment_url: response.payment_request.longurl
+        }).then(resolve => {
+          if (!resolve.error) {
+            res.send(JSON.stringify({
+              error: 0,
+              data: {
+                payment_url: response.payment_request.longurl,
+                payment_request_id: response.payment_request.id,
+                email: email,
+                name: name,
+                phone: phoneno,
+                amount: amount,
+                status: response.payment_request.status
+              }
+            }));
           }
-        }))
+        }, reject => {
+          res
+            .status(400)
+            .write(JSON.stringify({error: 1, message: 'Bad Request, Please retry'}))
+          res.end();
+        });
       } else {
         res.send(JSON.stringify({error: 1, code: 400, message: "Failed to generate url. Please retry after some time."}))
       }
     }
   })
-});
-
-app.get('/payment_status', (req, res) => {
-  if (req.query && req.query.payment_id && req.query.payment_request_id) {
-    res.send(JSON.stringify({payment_id: req.query.payment_id, payment_request_id: req.query.payment_request_id}));
-  } else {
-    res
-      .status(400)
-      .write(JSON.stringify({error: 1, message: 'Invalid Request'}));
-
-    res.end();
-  };
 });
 
 app.get('/check_payment', (req, res) => {
@@ -184,38 +193,49 @@ app.post('/payment_webhook', (req, res, next) => {
 
   let _id = "ZION" + randomBytes(3).toString('hex');
 
-  guestsList.insertOne({
-    _id: _id,
-    amount: amount,
-    email: buyer,
-    name: buyer_name,
-    fees: fees,
-    payment_id: payment_id,
+  guestsList.updateOne({
     payment_request_id: payment_request_id,
-    payment_status: status,
-    phone: buyer_phone
-  }, (err, result) => {
-    if (err) {
-      throw err;
-    } else {
-      if (result.result.ok && result.insertedCount) {
-        res.send(JSON.stringify({error: 0, message: 'Successfully stored'}))
-      } else {
-        console.log({
-          _id: _id,
-          amount: amount,
-          email: buyer,
-          name: buyer_name,
-          fees: fees,
-          payment_id: payment_id,
-          payment_request_id: payment_request_id,
-          payment_status: status,
-          phone: buyer_phone
-        });
-        res.send(JSON.stringify({error: 1, message: 'Error occurred in storing data in databases'}))
-      }
+    email: buyer
+  }, {
+    $set: {
+      _id: _id,
+      status: status,
+      payment_id: payment_id,
+      payment_url: ''
     }
-  })
+  }, (err, result) => {
+    if (err) 
+      throw err;
+    if (result.result.ok) {
+      console.log(`Payment Confirmation received for ${email}, ${payment_id}`)
+      res.send(JSON.stringify({error: 0, message: 'Successfully stored'}));
+    } else {
+      console.log({
+        _id: _id,
+        amount: amount,
+        email: buyer,
+        name: buyer_name,
+        fees: fees,
+        payment_id: payment_id,
+        payment_request_id: payment_request_id,
+        payment_status: status,
+        phone: buyer_phone
+      });
+
+      res.send(JSON.stringify({error: 1, message: 'Error occurred in storing data in databases'}))
+    }
+  });
+});
+
+app.get('/payment_status', (req, res) => {
+  if (req.query && req.query.payment_id && req.query.payment_request_id) {
+    res.send(JSON.stringify({payment_id: req.query.payment_id, payment_request_id: req.query.payment_request_id}));
+  } else {
+    res
+      .status(400)
+      .write(JSON.stringify({error: 1, message: 'Invalid Request'}));
+    res.end();
+  };
 });
 
 app.listen(PORT, (err) => {
@@ -231,29 +251,33 @@ Please Change PORT or stop the process using that port and then restart`)}`);
   }
 });
 
-/*
-function GenerateQRCode(_id) {
-  // Generate QR QRCode
-  return new Promise((resolve, reject) => {
-    QRCode.toDataURL(_id, {
-      errorCorrectLevel: 'H'
-    }, (err, url) => {
-      if (err) {
-        console.log(err);
-        reject();
-      }
-      resolve(url);
-    });
-  });
-}
+setInterval(function () {
+  const client = app.locals.client,
+    db = app.locals.db,
+    guestsList = db.collection('guestsList');
+  let UTCMinutes = new Date().getUTCMinutes(),
+    UTCHours = new Date().getUTCHours(),
+    indianMinutes = UTCMinutes + 30,
+    indianHours = UTCHours + 5;
 
-GenerateQRCode('ZIONer798a').then((qr_base64) => {
-  console.log(qr_base64);
-  let qr = qr_base64.replace('data:image/png;base64,', '')console.log(qr);
-  fs.writeFile('qr.png', qr, 'base64', (err) => {
-    if (err)
-      throw err;
-    }
-  )
-});
-*/
+  // if (indianMinutes == 8 && indianHours == 30) {
+  guestsList
+    .find({})
+    .toArray((err, docs) => {
+      if (err) {
+        throw err;
+      }
+      if (docs) {
+        docs.forEach(doc => {
+
+          client.hmset(doc['_id'], {
+            email: doc['buyer'],
+            name: doc['buyer_name'],
+            phone: doc['phone'],
+            amount: doc['amount']
+          })
+        });
+      }
+    });
+  // }
+}, 60000);
