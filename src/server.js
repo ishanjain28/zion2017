@@ -7,13 +7,15 @@ const express = require('express'),
   chalk = require('chalk'),
   mongo = require('mongodb'),
   Insta = require('instamojo-nodejs'), {randomBytes} = require('crypto'),
-  QRCode = require('qrcode'),
+  redis = require('redis'),
+  url = require('url'),
   app = express(),
   MClient = mongo.MongoClient,
   PORT = process.env.PORT || 5000,
   INSTA_API_KEY = process.env.INSTA_API_KEY,
   INSTA_AUTH_KEY = process.env.INSTA_AUTH_KEY,
-  MONGODB_URL = process.env.MONGODB_URI || "mongodb://localhost:27017/zion17";
+  MONGODB_URL = process.env.MONGODB_URI || "mongodb://localhost:27017/zion17",
+  REDISTOGO_URL = process.env.REDISTOGO_URL;
 
 // POST body parsers
 app.use(bodyParser.json());
@@ -30,11 +32,46 @@ Insta.isSandboxMode(true);
 // Establish connection to mongodb
 MClient.connect(MONGODB_URL, (err, db) => {
   if (err) {
+    console.log(`[\u274c]: ${chalk.red(`Error occured in connecting to MongoDB`)}`)
     throw err;
   } else {
     app.locals.db = db;
+    console.log(`[\u2713]: ${chalk.green(`Established connection to MongoDB`)}`)
   }
 });
+
+// Establish connection to redis
+if (process.env.NODE_ENV == "production") {
+  let rtgURL = url.parse(REDISTOGO_URL);
+  let client = redis.createClient(rtgURL.port, rtgURL.hostname);
+  client.auth(rtgURL.auth.split(':')[1]);
+
+  app.locals.client = client;
+} else {
+  let redisClient = redis.createClient();
+  app.locals.client = redisClient;
+}
+
+let redisErrorCount = 0;
+app
+  .locals
+  .client
+  .on('error', (err) => {
+    if (err) {
+      console.error(`[\u274c]: ${chalk.red(`[${err.code}]`)} ${err.message}`)
+    }
+    if (redisErrorCount >= 5) {
+      console.error(`[\u274c]: ${chalk.red(`Failed to connect to redis in 5 tries. Exiting!`)}`)
+      process.exit(1);
+    }
+    redisErrorCount++;
+  });
+app
+  .locals
+  .client
+  .on('connect', () => {
+    console.log(`[\u2713]: ${chalk.green(`Established connection to redis`)}`)
+  });
 
 app.post('/generate_request_url',
 // Validation Middleware
@@ -177,17 +214,18 @@ app.post('/payment_webhook', (req, res) => {
 
 app.listen(PORT, (err) => {
   if (err && err.code === "EADDRINUSE") {
-    console.log(chalk.red(`The PORT ${PORT} is already occupied by some other process.
-Please Change PORT or stop the process using that port and then restart`));
+    console.log(`[\u274c]: ${chalk.red(`The PORT ${PORT} is already occupied by some other process.
+Please Change PORT or stop the process using that port and then restart`)}`);
     process.exit(1);
   } else if (err) {
-    console.log('akdjakljd')
     // Something terrible happened! throw err;
+    throw err;
   } else {
-    console.log(`${chalk.green(`Server successfully started on PORT ${PORT}`)}\nBring it on!`)
+    console.log(`[\u2713]: ${chalk.green(`Server successfully started on PORT ${PORT}`)}`)
   }
 });
 
+/*
 function GenerateQRCode(_id) {
   // Generate QR QRCode
   return new Promise((resolve, reject) => {
@@ -202,7 +240,14 @@ function GenerateQRCode(_id) {
     });
   });
 }
-// GenerateQRCode('ZIONer798a').then((qr_base64) => {   console.log(qr_base64);
-// let qr = qr_base64.replace('data:image/png;base64,', '')   console.log(qr);
-// fs.writeFile('qr.png', qr, 'base64', (err) => {     if (err)       throw err;
-//     }   ) });
+
+GenerateQRCode('ZIONer798a').then((qr_base64) => {
+  console.log(qr_base64);
+  let qr = qr_base64.replace('data:image/png;base64,', '')console.log(qr);
+  fs.writeFile('qr.png', qr, 'base64', (err) => {
+    if (err)
+      throw err;
+    }
+  )
+});
+*/
