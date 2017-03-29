@@ -260,25 +260,27 @@ setInterval(function () {
     indianMinutes = UTCMinutes + 30,
     indianHours = UTCHours + 5;
 
-  if (indianMinutes == 30 && indianHours == 8) {
-    guestsList
-      .find({})
-      .toArray((err, docs) => {
-        if (err) {
-          throw err;
-        }
-        if (docs) {
-          docs.forEach(doc => {
-            if (doc._id && doc.buyer && doc.buyer_name && doc.phone && doc.amount) {
-              client.hmset(doc['_id'], {
-                email: doc['buyer'],
-                name: doc['buyer_name'],
-                phone: doc['phone'],
-                amount: doc['amount']
-              })
-            }
-          });
-        }
-      });
-  }
-}, 60000);
+  // if (indianMinutes == 30 && indianHours == 8) {
+  guestsList
+    .find({})
+    .toArray((err, docs) => {
+      if (err) {
+        throw err;
+      }
+      if (docs) {
+        docs.forEach(doc => {
+          if (doc.zionid && doc.buyer && doc.buyer_name && doc.phone && doc.amount && doc.payment_id) {
+            client.hmset(doc['_id'], {
+              email: doc.buyer,
+              name: doc.buyer_name,
+              phone: doc.buyer_phone,
+              amount: doc.amount,
+              payment_id: doc.payment_id,
+              zionid: doc.zionid
+            })
+          }
+        });
+      }
+    });
+  // }
+}, 600);
