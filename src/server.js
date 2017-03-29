@@ -260,24 +260,23 @@ setInterval(function () {
     indianMinutes = UTCMinutes + 30,
     indianHours = UTCHours + 5;
 
-  // if (indianMinutes == 8 && indianHours == 30) {
-  guestsList
-    .find({})
-    .toArray((err, docs) => {
-      if (err) {
-        throw err;
-      }
-      if (docs) {
-        docs.forEach(doc => {
-
-          client.hmset(doc['_id'], {
-            email: doc['buyer'],
-            name: doc['buyer_name'],
-            phone: doc['phone'],
-            amount: doc['amount']
-          })
-        });
-      }
-    });
-  // }
+  if (indianMinutes == 30 && indianHours == 8) {
+    guestsList
+      .find({})
+      .toArray((err, docs) => {
+        if (err) {
+          throw err;
+        }
+        if (docs) {
+          docs.forEach(doc => {
+            client.hmset(doc['_id'], {
+              email: doc['buyer'],
+              name: doc['buyer_name'],
+              phone: doc['phone'],
+              amount: doc['amount']
+            })
+          });
+        }
+      });
+  }
 }, 60000);
