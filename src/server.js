@@ -250,7 +250,7 @@ Please Change PORT or stop the process using that port and then restart`)}`);
   }
 });
 
-app.post('/authorise_user', (req, res, next) => {
+app.post('/authorise_guest', (req, res, next) => {
   if (req.body && req.body.email && req.body.zionid) {
     const {email, zionid} = req.body;
     client.hgetall(zionid, (err, result) => {
@@ -275,6 +275,46 @@ app.post('/authorise_user', (req, res, next) => {
       .write(JSON.stringify({error: 1, message: "Invalid Data"}))
   }
 })
+
+app.post('/submit_update', (req, res, next) => {
+  const db = req.app.locals.db,
+    updates = db.collection('updates');
+
+  if (req.body && req.body.update_message) {
+    const update_message = req.body.message,
+      date = new Date();
+    updates.insertOne({
+      update_message: update_message,
+      date: date
+    }, (err, result) => {
+      if (err) {
+        res.send(JSON.stringify({error: 1, message: error.message}));
+      } else if (result.result.ok && result.insertedCount) {
+        res.send(JSON.stringify({error: 0, message: "Update stored Successfully"}));
+      } else {
+        res.send(JSON.stringify({error: 1, message: 'Unknown Error Occured, Please Retry'}));
+      }
+    })
+  }
+})
+
+app.get('/updates', (req, res, next) => {
+  const db = req.app.locals.db,
+    updates = db.collection('updates');
+
+  updates
+    .find({})
+    .toArray((err, docs) => {
+      if (err) {
+        res.send(JSON.stringify({error: 1, message: "Error Occured in fetching updates, Please retry"}));
+      } else if (docs) {
+        res.send(JSON.stringify({error: 0, updates: docs}));
+      } else {
+        res.send(JSON.stringify({error: 0, updates: []}));
+      }
+    });
+})
+
 // Seeds All guests who paid the fee to redis
 setInterval(function () {
   const client = app.locals.client,
@@ -307,9 +347,9 @@ setInterval(function () {
                 if (err) 
                   throw err;
                 if (status == "OK") {
-                  console.log(`Successfully ${zionid} seeded in redis`)
+                  console.log(`Successfully ${zionid} seeded in redis`);
                 } else {
-                  console.log(`Failed in seeding ${zionid} to redis`)
+                  console.log(`Failed in seeding ${zionid} to redis`);
                 }
               })
             }
