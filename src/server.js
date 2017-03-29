@@ -197,7 +197,7 @@ app.post('/payment_webhook', (req, res, next) => {
     payment_request_id: payment_request_id
   }, {
     $set: {
-      _id: _id,
+      zionid: _id,
       status: status,
       payment_id: payment_id,
       payment_url: ''
@@ -206,7 +206,7 @@ app.post('/payment_webhook', (req, res, next) => {
     if (err) 
       throw err;
     if (result.result.ok) {
-      console.log(`Payment Confirmation received for ${email}, ${payment_id}`)
+      console.log(`Payment Confirmation received for ${buyer}, ${payment_id}`)
       res.send(JSON.stringify({error: 0, message: 'Successfully stored'}));
     } else {
       console.log({
