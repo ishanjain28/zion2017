@@ -165,9 +165,7 @@ app.post('/payment_webhook', (req, res, next) => {
   if (req.headers['user-agent'] == "Instamojo-Webhook/1.0" && req.headers['x-webhook-signature'] == req.body['mac'] && req.body.amount && req.body.buyer_name && req.body.buyer && req.body.buyer_phone && req.body.fees && req.body.payment_id && req.body.payment_request_id && req.body.status) {
     next();
   } else {
-    res
-      .status(400)
-      .write(JSON.stringify({error: 1, message: "Bad Request"}));
+    res.status(404)
     res.end();
   }
 }, (req, res) => {
@@ -200,9 +198,7 @@ app.post('/payment_webhook', (req, res, next) => {
     if (err) {
       throw err;
     } else {
-      console.log(result)
-      console.log(result.result)
-      if (result.result.ok && result.nInserted) {
+      if (result.result.ok && result.insertedCount) {
         res.send(JSON.stringify({error: 0, message: 'Successfully stored'}))
       } else {
         console.log({
