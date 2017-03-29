@@ -250,6 +250,31 @@ Please Change PORT or stop the process using that port and then restart`)}`);
   }
 });
 
+app.post('/authorise_user', (req, res, next) => {
+  if (req.body && req.body.email && req.body.zionid) {
+    const {email, zionid} = req.body;
+    client.hgetall(zionid, (err, result) => {
+      if (err) {
+        res.send(JSON.stringify({error: 1, message: "Error Occurred in fetching guests record, Please retry"}));
+      } else if (result) {
+        res.send(JSON.stringify(JSON.stringify({error: 0, authorised: 1, zionid: zionid})));
+        client.del(zionid, (err, result) => {
+          if (err) {
+            console.error(err);
+          } else {
+            console.log('Record Erased')
+          }
+        })
+      } else {
+        res.send(JSON.stringify({error: 0, authorised: 0, message: 'Guest Record Not found'}))
+      }
+    })
+  } else {
+    res
+      .status(400)
+      .write(JSON.stringify({error: 1, message: "Invalid Data"}))
+  }
+})
 // Seeds All guests who paid the fee to redis
 setInterval(function () {
   const client = app.locals.client,
