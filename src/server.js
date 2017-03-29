@@ -70,7 +70,7 @@ app
 app
   .locals
   .client
-  .on('connect', () => {
+  .once('connect', () => {
     console.log(`[\u2713]: ${chalk.green(`Established connection to redis`)}`)
   });
 
@@ -194,8 +194,7 @@ app.post('/payment_webhook', (req, res, next) => {
   let _id = "ZION" + randomBytes(3).toString('hex');
 
   guestsList.updateOne({
-    payment_request_id: payment_request_id,
-    email: buyer
+    payment_request_id: payment_request_id
   }, {
     $set: {
       _id: _id,
@@ -251,6 +250,7 @@ Please Change PORT or stop the process using that port and then restart`)}`);
   }
 });
 
+// Seeds All guests who paid the fee to redis
 setInterval(function () {
   const client = app.locals.client,
     db = app.locals.db,
@@ -269,12 +269,14 @@ setInterval(function () {
         }
         if (docs) {
           docs.forEach(doc => {
-            client.hmset(doc['_id'], {
-              email: doc['buyer'],
-              name: doc['buyer_name'],
-              phone: doc['phone'],
-              amount: doc['amount']
-            })
+            if (doc._id && doc.buyer && doc.buyer_name && doc.phone && doc.amount) {
+              client.hmset(doc['_id'], {
+                email: doc['buyer'],
+                name: doc['buyer_name'],
+                phone: doc['phone'],
+                amount: doc['amount']
+              })
+            }
           });
         }
       });
