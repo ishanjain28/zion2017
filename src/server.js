@@ -159,7 +159,19 @@ app.get('/check_payment', (req, res) => {
   }
 });
 
-app.post('/payment_webhook', (req, res) => {
+app.post('/payment_webhook', (req, res, next) => {
+  // Very basic validation to prevent people from doing fishy stuff It's still
+  // possible to do that but I don't have a very good way to prevent this.
+  if (req.headers['user-agent'] == "Instamojo-Webhook/1.0" && req.headers['x-webhook-signature'] == req.body['mac'] && req.body.amount && req.body.buyer_name && req.body.buyer && req.body.buyer_phone && req.body.fees && req.body.payment_id && req.body.payment_request_id && req.body.status) {
+    next();
+  } else {
+    res
+      .status(400)
+      .write(JSON.stringify({error: 1, message: "Bad Request"}));
+    res.end();
+  }
+}, (req, res) => {
+
   const db = req.app.locals.db,
     guestsList = db.collection('guestsList'), {
       amount,
@@ -169,7 +181,6 @@ app.post('/payment_webhook', (req, res) => {
       fees,
       payment_id,
       payment_request_id,
-      shorturl,
       status
     } = req.body;
 
@@ -184,13 +195,13 @@ app.post('/payment_webhook', (req, res) => {
     payment_id: payment_id,
     payment_request_id: payment_request_id,
     payment_status: status,
-    shorturl: shorturl,
     phone: buyer_phone
   }, (err, result) => {
     if (err) {
       throw err;
     } else {
-
+      console.log(result)
+      console.log(result.result)
       if (result.result.ok && result.nInserted) {
         res.send(JSON.stringify({error: 0, message: 'Successfully stored'}))
       } else {
@@ -203,7 +214,6 @@ app.post('/payment_webhook', (req, res) => {
           payment_id: payment_id,
           payment_request_id: payment_request_id,
           payment_status: status,
-          shorturl: shorturl,
           phone: buyer_phone
         });
         res.send(JSON.stringify({error: 1, message: 'Error occurred in storing data in databases'}))
