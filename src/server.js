@@ -100,7 +100,7 @@ app.post('/generate_payment_url',
   req_data.phone = phoneno;
   req_data.send_sms = 'False';
   req_data.send_email = 'False';
-  req_data.setRedirectUrl(`http://zion17.herokuapp.com/payment_status`);
+  req_data.setRedirectUrl(`http://zion17.herokuapp.com/payment_redirect`);
   req_data.webhook = `http://zion17.herokuapp.com/payment_webhook_xyz`;
   req_data.allow_repeated_payments = false;
 
