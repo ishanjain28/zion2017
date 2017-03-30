@@ -22,6 +22,7 @@ A guest is redirected from Instamojo Payment Service after completing their paym
     {
         "payment_id": "payment_id as recieved in query parameters",
         "payment_request_id": "payment_request_id as received in query parameters"
+    }
 
 ### Fail result
 
