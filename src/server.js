@@ -4,6 +4,7 @@ require('dotenv').config();
 const express = require('express'),
   bodyParser = require('body-parser'),
   chalk = require('chalk'),
+  path = require('path'),
   mongo = require('mongodb'),
   Insta = require('instamojo-nodejs'),
   redis = require('redis'),
@@ -74,7 +75,10 @@ app
     console.log(`[\u2713]: ${chalk.green(`Established connection to redis`)}`)
   });
 
-app.post('/generate_request_url',
+app.get('/', express.static(path.join(__dirname, '../public')));
+app.get('/assets', express.static(path.join(__dirname, '../public/assets')));
+
+app.post('/generate_payment_url',
 // Validation Middleware
 (req, res, next) => {
   if (req.body && req.body.name && req.body.phoneno && req.body.email && req.body.amount) {
@@ -97,7 +101,7 @@ app.post('/generate_request_url',
   req_data.send_sms = 'False';
   req_data.send_email = 'False';
   req_data.setRedirectUrl(`http://zion17.herokuapp.com/payment_status`);
-  req_data.webhook = `http://zion17.herokuapp.com/payment_webhook`;
+  req_data.webhook = `http://zion17.herokuapp.com/payment_webhook_xyz`;
   req_data.allow_repeated_payments = false;
 
   Insta.createPayment(req_data, (error, resp) => {
@@ -168,7 +172,7 @@ app.get('/check_payment', (req, res) => {
   }
 });
 
-app.post('/payment_webhook', (req, res, next) => {
+app.post('/payment_webhook_xyz', (req, res, next) => {
   // Very basic validation to prevent people from doing fishy stuff It's still
   // possible to do that but I don't have a very good way to prevent this.
   if (req.headers['user-agent'] == "Instamojo-Webhook/1.0" && req.headers['x-webhook-signature'] == req.body['mac'] && req.body.amount && req.body.buyer_name && req.body.buyer && req.body.buyer_phone && req.body.fees && req.body.payment_id && req.body.payment_request_id && req.body.status) {
@@ -226,7 +230,7 @@ app.post('/payment_webhook', (req, res, next) => {
   });
 });
 
-app.get('/payment_status', (req, res) => {
+app.get('/payment_redirect', (req, res) => {
   if (req.query && req.query.payment_id && req.query.payment_request_id) {
     res.send(JSON.stringify({payment_id: req.query.payment_id, payment_request_id: req.query.payment_request_id}));
   } else {

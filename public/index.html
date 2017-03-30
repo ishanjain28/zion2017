@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>Updates : ZION 2017</title>
+
+    <link rel="stylesheet" href="assets/demo.css">
+    <link rel="stylesheet" href="assets/form-basic.css">
+
+    <style>
+
+    </style>
+</head>
+<header style="margin-bottom: 50px;">
+    <h1>Updates : ZION 2017</h1>
+</header>
+<div class="main-content" id="main-content">
+    <form class="form-basic" id="form-basic">
+        <div class="form-row">
+            <label>
+                    <span>Login Name</span>
+                    <input type="text" name="login" id="login" required>
+            </label>
+        </div>
+        <div class="form-row">
+            <label>
+                    <span>Password</span>
+                    <input type="password" name="password" id="password" required>
+            </label>
+        </div>
+        <div class="form-row">
+            <button type="submit" id="login-button">Login</button>
+        </div>
+    </form>
+</div>
+<script type="text/javascript">
+    window.onload = function () {
+        document.getElementById('form-basic').addEventListener('submit', function (event) {
+            event.preventDefault();
+            Login();
+        });
+    }
+
+    function Login() {
+        var http = new XMLHttpRequest(),
+            url = "/login";
+        var username = document.getElementById('login').value,
+            password = document.getElementById('password').value,
+            submitButton = document.getElementById('login-button');
+
+        http.open("GET", url, true);
+        http.setRequestHeader("login_name", username);
+        http.setRequestHeader("password", password);
+        http.onreadystatechange = function () {
+            if (http.readyState == 4 && http.status == 200) {
+                var response = JSON.parse(http.responseText);
+                if (!response.error) {
+                    document.getElementById('form-basic').remove();
+                    DrawTable(response.data);
+                }
+            } else if (http.readyState == 4 && http.status == 400) {
+                alert('Invalid Data');
+            }
+            submitButton.disabled = false;
+            submitButton.value = "Submit";
+        }
+        http.send();
+    }
+
+</script>
+</body>
+
+</html>
