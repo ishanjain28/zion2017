@@ -49,19 +49,19 @@ Server is Live on http://localhost:5000
 # API Reference
 
 ## [Generate Payment URL](https://ishanjain28.github.io/zion2017/generate_payment_url)
-> Endpoint used to create an URL for payment
+> Endpoint to create an URL for payment
 
 ## [Check Payment](https://ishanjain28.github.io/zion2017/check_payment)
-> Endpoint used to Check the Payment Status of a transaction 
+> Endpoint to Check the Payment Status of a transaction 
 
-## [Payment Redirect]https://ishanjain28.github.io/zion2017/payment_redirect)
+## [Payment Redirect](https://ishanjain28.github.io/zion2017/payment_redirect)
 > Endpoint that the user'll be redirected to after a transaction completes, Regardless of the result of transaction
 
 ## [Authorise Guest](https://ishanjain28.github.io/zion2017/authorise_guest)
-> Endpoint used to authorises the guest  
+> Endpoint to authorises the guest  
 
 ## [Submit Update](https://zion2017.github.io/zion2017/submit_update)
-> Endpoint used Submit a new Status Update
+> Endpoint to Submit a new Status Update
 
 ## [Submit Outpass](https://ishanjain28.github.io/zion2017/updates)
-> Endpoint used to get all the previously submitted updates
+> Endpoint to get all the previously submitted updates
