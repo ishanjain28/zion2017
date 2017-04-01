@@ -81,6 +81,8 @@ app.get('/assets', express.static(path.join(__dirname, '../public/assets')));
 app.post('/generate_payment_url',
 // Validation Middleware
 (req, res, next) => {
+  console.log(req.headers)
+  console.log(req.body)
   if (req.body && req.body.name && req.body.phoneno && req.body.email && req.body.amount) {
     next();
   } else {
